@@ -1,0 +1,144 @@
+/* Estilo das telas de abertura e de onboarding (mesma paleta do app). */
+:root {
+  --bg: #0f0b24;
+  --panel: #1d1740;
+  --panel-hi: #34297a;
+  --panel-lo: #120e2c;
+  --outline: #07051a;
+  --text: #ece8ff;
+  --text-dim: #9a93c8;
+  --gold: #f2b632;
+  --gold-dark: #b9791a;
+  --red: #e0457a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 2px, transparent 2px);
+  background-size: 48px 24px;
+  user-select: none;
+}
+
+button { font-family: inherit; }
+
+h1 {
+  font-family: 'Press Start 2P', monospace;
+  font-weight: 400;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--gold);
+  text-shadow: 3px 3px 0 var(--outline);
+}
+
+.px-btn {
+  border: 4px solid var(--outline);
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  line-height: 1.5;
+  color: var(--outline);
+  background: var(--gold);
+  box-shadow: inset -4px -4px 0 var(--gold-dark), inset 4px 4px 0 #ffe27a;
+  padding: 10px 14px;
+}
+.px-btn:hover { filter: brightness(1.1); }
+.px-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: inset 4px 4px 0 var(--gold-dark);
+}
+.px-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.px-btn:disabled { filter: grayscale(1) brightness(0.7); cursor: default; }
+
+.px-btn.secondary {
+  color: var(--text);
+  background: #2a2358;
+  box-shadow: inset -4px -4px 0 #1a1540, inset 4px 4px 0 #3a3278;
+}
+
+/* ---------------- abertura ---------------- */
+.splash {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border: 4px solid var(--outline);
+  box-shadow: inset 4px 4px 0 var(--panel-hi), inset -4px -4px 0 var(--panel-lo);
+  cursor: pointer;
+  -webkit-app-region: drag;
+}
+
+#splashCanvas {
+  width: 192px;
+  height: 216px;
+  image-rendering: pixelated;
+}
+
+.splash-sub { color: var(--text-dim); min-height: 1.2em; }
+
+/* ---------------- onboarding ---------------- */
+.onboarding {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ob-panel {
+  width: 100%;
+  max-width: 640px;
+  background: var(--panel);
+  border: 4px solid var(--outline);
+  box-shadow:
+    inset 4px 4px 0 var(--panel-hi),
+    inset -4px -4px 0 var(--panel-lo),
+    8px 8px 0 rgba(0, 0, 0, 0.4);
+  padding: 30px;
+}
+
+.ob-panel p { margin: 14px 0 0; }
+.ob-dim { color: var(--text-dim); }
+.ob-warn { color: var(--red); }
+
+.ob-path {
+  margin-top: 18px;
+  padding: 10px 12px;
+  border: 4px solid var(--outline);
+  background: #120e2c;
+  box-shadow: inset 3px 3px 0 #0a0720;
+  word-break: break-all;
+  user-select: text;
+}
+.ob-path-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.ob-found { color: #9cf07a; min-height: 1.2em; }
+
+.ob-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}

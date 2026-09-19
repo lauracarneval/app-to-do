@@ -1,0 +1,46 @@
+{
+  "name": "calendario-de-pocoes",
+  "productName": "Calendário de Poções",
+  "version": "1.0.0",
+  "description": "To-do com calendário e um ateliê de poções em pixel art. Offline first: os dados ficam numa pasta escolhida por você.",
+  "author": "Laura Viana",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "electron test/e2e.js",
+    "icon": "node scripts/make-icon.js",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.lauraviana.calendariodepocoes",
+    "productName": "Calendário de Poções",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "build/icon.png",
+      "build/icon.ico"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    }
+  }
+}

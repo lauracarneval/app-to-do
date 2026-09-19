@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendário de Poções</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="app-header">
+    <div>
+      <h1>Calendário de Poções</h1>
+      <div class="subtitle">Complete todas as tarefas de um dia para fortalecer a poção do mês.</div>
+    </div>
+    <!-- só aparece no app desktop -->
+    <div class="app-actions" id="appActions" hidden>
+      <button type="button" class="px-btn ghost" id="widgetBtn">Widget</button>
+      <button type="button" class="px-btn ghost" id="folderBtn">Pasta de dados</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ================= CENÁRIO ================= -->
+    <div class="panel scene-panel">
+      <div class="scene-frame">
+        <canvas id="scene" width="192" height="120" role="img" aria-label="Ateliê de poções"></canvas>
+        <div class="scene-toast" id="sceneToast" aria-live="polite"></div>
+      </div>
+
+      <div class="potion-hud">
+        <div class="potion-title" id="potionTitle"></div>
+        <div class="potion-name-row">
+          <span class="potion-name" id="potionName"></span>
+          <span class="potion-count" id="potionCount"></span>
+        </div>
+        <div class="day-segments" id="daySegments"></div>
+        <div class="potion-hint" id="potionHint"></div>
+      </div>
+    </div>
+
+    <!-- ================= CALENDÁRIO ================= -->
+    <div class="panel calendar-panel">
+      <h2>Calendário</h2>
+      <div class="cal-header">
+        <button class="px-btn" id="prevMonth" aria-label="Mês anterior">&lt;</button>
+        <span class="month-label" id="monthLabel"></span>
+        <button class="px-btn" id="nextMonth" aria-label="Próximo mês">&gt;</button>
+      </div>
+      <div class="today-row">
+        <button class="px-btn" id="todayBtn">Hoje</button>
+      </div>
+      <div class="weekdays">
+        <div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div>
+      </div>
+      <div class="days-grid" id="daysGrid"></div>
+
+      <div class="legend">
+        <span id="legendPending"></span>
+        <span id="legendDone"></span>
+      </div>
+    </div>
+
+    <!-- ================= PAINEL DO DIA ================= -->
+    <div class="panel day-panel" id="dayPanel">
+      <div class="selected-date-label" id="selectedDateLabel"></div>
+      <div class="task-progress" id="taskProgress"></div>
+
+      <form class="add-task-form" id="addTaskForm">
+        <input type="text" id="newTaskInput" placeholder="Nova tarefa..." maxlength="200" autocomplete="off" aria-label="Nova tarefa">
+        <button type="submit" class="px-btn" aria-label="Adicionar tarefa">+</button>
+      </form>
+
+      <ul class="task-list" id="taskList"></ul>
+      <div class="empty-state" id="emptyState">Nenhuma tarefa por aqui.<br>Adicione a primeira!</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= PERGAMINHO (cartazes, livro e bilhete) ================= -->
+<div class="scroll-overlay" id="scrollOverlay" hidden>
+  <div class="scroll" role="dialog" aria-modal="true" aria-labelledby="scrollTitle">
+    <button type="button" class="scroll-close" id="scrollClose" aria-label="Fechar">x</button>
+    <h2 id="scrollTitle"></h2>
+    <div id="scrollBody"></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendário de Poções</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+
+<main class="onboarding">
+  <div class="ob-panel">
+    <h1>Bem-vinda ao ateliê</h1>
+    <p id="obMissing" class="ob-warn" hidden></p>
+    <p>Escolha a pasta onde seus dados vão ficar guardados.</p>
+    <p class="ob-dim">Tudo fica só neste computador, num arquivo <span id="obFile"></span> dentro dessa pasta. O app funciona sem internet. Se a pasta já tiver dados do Calendário de Poções, eles serão abertos.</p>
+
+    <div class="ob-path">
+      <span class="ob-path-label">Pasta de dados</span>
+      <span id="obPath"></span>
+    </div>
+    <p class="ob-found" id="obFound"></p>
+
+    <div class="ob-actions">
+      <button type="button" class="px-btn secondary" id="obChoose">Escolher outra pasta...</button>
+      <button type="button" class="px-btn" id="obStart">Começar</button>
+    </div>
+    <p class="ob-warn" id="obError" hidden></p>
+  </div>
+</main>
+
+<script src="onboarding.js"></script>
+</body>
+</html>
