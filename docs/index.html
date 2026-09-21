@@ -134,7 +134,14 @@
         <h3>macOS</h3>
         <p class="dim">Intel e Apple Silicon</p>
         <a class="px-btn" href="https://github.com/lauracarneval/app-to-do/releases/latest/download/Calendario-de-Pocoes-macOS.dmg">Baixar .dmg</a>
-        <p class="hint">Arraste para <b>Aplicativos</b>, clique no app com o botão direito e escolha <b>Abrir</b>. Se o sistema disser que está danificado, rode no Terminal:<br><code>xattr -cr "/Applications/Calendário de Poções.app"</code></p>
+        <p class="hint">Arraste o app para <b>Aplicativos</b> e abra. O macOS vai avisar que não pôde verificar o app (ele não é notarizado pela Apple). Para liberar, uma vez só:</p>
+        <ol class="hint-steps">
+          <li>No aviso, clique em <b>OK</b> (ou <b>Done</b>). Não mova para o Lixo.</li>
+          <li>Abra <b>Ajustes do Sistema › Privacidade e Segurança</b>.</li>
+          <li>Role até <b>Segurança</b> e clique em <b>Abrir Mesmo Assim</b> ao lado de "Calendário de Poções".</li>
+          <li>Confirme com a senha ou o Touch ID.</li>
+        </ol>
+        <p class="hint">Prefere o Terminal? Este comando faz o mesmo:<br><code>xattr -dr com.apple.quarantine "/Applications/Calendário de Poções.app"</code></p>
       </article>
       <article class="panel card dl" data-os="linux">
         <h3>Ubuntu</h3>

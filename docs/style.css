@@ -218,6 +218,8 @@ section { margin-bottom: 84px; scroll-margin-top: 24px; }
 .dl h3 { font-size: 0.85rem; }
 .dl .px-btn { margin: 6px 0 18px; }
 .dl .hint { font-size: 0.88em; margin-bottom: 0; }
+.dl .hint-steps { font-size: 0.88em; color: var(--text-dim); margin: 8px 0 12px; padding-left: 1.3em; }
+.dl .hint-steps li { margin-bottom: 4px; }
 .dl.is-yours { box-shadow: inset 4px 4px 0 var(--panel-hi), inset -4px -4px 0 var(--panel-lo), 0 0 0 4px var(--gold), 8px 8px 0 rgba(0, 0, 0, 0.4); }
 .dl.is-yours h3::after { content: ' · o seu'; color: var(--teal); }
 code {
