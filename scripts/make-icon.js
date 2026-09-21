@@ -1,4 +1,4 @@
-/* Gera build/icon.png (256x256) e build/icon.ico (vários tamanhos): o frasco de poção em pixel art.
+/* Gera build/icon.png (512x512, exigido pelo macOS) e build/icon.ico (vários tamanhos): o frasco de poção em pixel art.
    Sem dependências: monta o PNG na mão com zlib.
    uso: npm run icon */
 const fs = require('fs');
@@ -125,6 +125,6 @@ function icoOf(sizes) {
 
 const dir = path.join(__dirname, '..', 'build');
 fs.mkdirSync(dir, { recursive: true });
-fs.writeFileSync(path.join(dir, 'icon.png'), pngOfSize(SIZE));
+fs.writeFileSync(path.join(dir, 'icon.png'), pngOfSize(512));
 fs.writeFileSync(path.join(dir, 'icon.ico'), icoOf([16, 24, 32, 48, 64, 128, 256]));
 console.log('icones gerados em', dir);

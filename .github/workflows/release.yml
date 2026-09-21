@@ -1,0 +1,54 @@
+# Gera os instaladores de Windows, macOS e Ubuntu e publica numa release do GitHub.
+# Dispara ao enviar uma tag de versão:  git tag v1.2.0 && git push origin v1.2.0
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Criar a release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Criar a release (se ainda não existir)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" \
+            --title "Calendário de Poções $TAG" \
+            --notes-file .github/release-notes.md
+
+  build:
+    name: Instalador (${{ matrix.nome }})
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { nome: Windows, os: windows-latest, arquivo: 'dist/*.exe' }
+          - { nome: macOS, os: macos-latest, arquivo: 'dist/*.dmg' }
+          - { nome: Ubuntu, os: ubuntu-latest, arquivo: 'dist/*.deb' }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gerar o instalador
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Enviar para a release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release upload "$TAG" ${{ matrix.arquivo }} --clobber

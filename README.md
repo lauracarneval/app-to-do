@@ -56,11 +56,35 @@ Roda o app de verdade dentro do Electron, com pastas temporárias (não toca nos
 abertura, onboarding, tarefas, edição, poção, cenário interativo, pergaminhos, ampulheta, widget,
 troca de pasta e persistência ao reabrir.
 
-## Gerar o instalador (Windows)
+## Baixar
+
+Página do app, com os downloads: https://lauracarneval.github.io/app-to-do/
+
+| Sistema | Instalador |
+| --- | --- |
+| Windows 10/11 | [Calendario-de-Pocoes-Windows-Setup.exe](https://github.com/lauracarneval/app-to-do/releases/latest/download/Calendario-de-Pocoes-Windows-Setup.exe) |
+| macOS (Intel e Apple Silicon) | [Calendario-de-Pocoes-macOS.dmg](https://github.com/lauracarneval/app-to-do/releases/latest/download/Calendario-de-Pocoes-macOS.dmg) |
+| Ubuntu / Debian | [calendario-de-pocoes-ubuntu.deb](https://github.com/lauracarneval/app-to-do/releases/latest/download/calendario-de-pocoes-ubuntu.deb) |
+
+## Gerar os instaladores
 
 ```
 npm run dist
 ```
+
+Gera o instalador do sistema em que o comando roda (o `.dmg` só pode ser gerado num Mac).
+
+Os três instaladores das releases são gerados pelo GitHub Actions
+(`.github/workflows/release.yml`), cada um no seu sistema. Para publicar uma versão nova:
+
+```
+npm version 1.2.0 --no-git-tag-version   # e faça o commit
+git tag v1.2.0
+git push origin main v1.2.0
+```
+
+Os arquivos têm nome fixo, sem versão, então os links `releases/latest/download/...`
+da página continuam valendo a cada release.
 
 ## Estrutura
 
@@ -75,4 +99,6 @@ src/onboarding.*   escolha da pasta de dados
 src/fonts/         Press Start 2P e VT323 (licença OFL)
 scripts/make-icon.js   gera build/icon.png
 test/e2e.js        teste de aceite
+docs/              landing page (GitHub Pages)
+.github/workflows/release.yml   gera e publica os instaladores
 ```

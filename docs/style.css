@@ -1,0 +1,255 @@
+/* Landing page do Calendário de Poções — mesma paleta "ateliê noturno" do app */
+@font-face {
+  font-family: 'Press Start 2P';
+  font-display: swap;
+  src: url(fonts/PressStart2P-latin.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'VT323';
+  font-display: swap;
+  src: url(fonts/VT323-latin.woff2) format('woff2');
+}
+
+:root {
+  --bg: #0f0b24;
+  --panel: #1d1740;
+  --panel-hi: #34297a;
+  --panel-lo: #120e2c;
+  --outline: #07051a;
+  --text: #ece8ff;
+  --text-dim: #a59fd0;
+  --gold: #f2b632;
+  --gold-dark: #b9791a;
+  --green: #4ed44a;
+  --teal: #3cd4c0;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  line-height: 1.25;
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 2px, transparent 2px);
+  background-size: 48px 24px;
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--gold); }
+a:focus-visible, .px-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+h1, h2, h3, .brand, .eyebrow, .px-btn, .top-nav {
+  font-family: 'Press Start 2P', monospace;
+  font-weight: 400;
+}
+h1, h2 { color: var(--gold); text-shadow: 3px 3px 0 var(--outline); margin: 0; }
+h1 { font-size: clamp(1.25rem, 3.4vw, 2.1rem); line-height: 1.45; }
+h2 { font-size: clamp(0.95rem, 2.2vw, 1.25rem); line-height: 1.5; margin-bottom: 22px; }
+h3 { font-size: 0.72rem; line-height: 1.6; color: var(--gold); margin: 0 0 10px; }
+p { margin: 0 0 14px; }
+.dim { color: var(--text-dim); }
+.center { text-align: center; }
+
+main, .top, .foot {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+section { margin-bottom: 84px; scroll-margin-top: 24px; }
+
+/* ---------- topo ---------- */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: var(--gold);
+  text-decoration: none;
+  text-shadow: 2px 2px 0 var(--outline);
+}
+.brand img { image-rendering: pixelated; }
+.top-nav { display: flex; gap: 8px 22px; flex-wrap: wrap; font-size: 0.58rem; }
+.top-nav a { color: var(--text); text-decoration: none; padding: 6px 0; }
+.top-nav a:hover { color: var(--gold); }
+
+/* ---------- painéis e botões (iguais aos do app) ---------- */
+.panel {
+  background: var(--panel);
+  border: 4px solid var(--outline);
+  box-shadow:
+    inset 4px 4px 0 var(--panel-hi),
+    inset -4px -4px 0 var(--panel-lo),
+    8px 8px 0 rgba(0, 0, 0, 0.4);
+  padding: 24px;
+}
+.px-btn {
+  display: inline-block;
+  border: 4px solid var(--outline);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--outline);
+  background: var(--gold);
+  box-shadow: inset -4px -4px 0 var(--gold-dark), inset 4px 4px 0 #ffe27a;
+  padding: 13px 16px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.px-btn:hover { filter: brightness(1.1); }
+.px-btn:active { transform: translate(2px, 2px); box-shadow: inset 4px 4px 0 var(--gold-dark); }
+.px-btn.big { font-size: 0.85rem; padding: 18px 22px; }
+
+/* ---------- abertura ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 48px;
+  align-items: center;
+  padding-top: 36px;
+}
+.eyebrow { font-size: 0.58rem; color: var(--teal); margin-bottom: 18px; text-transform: uppercase; }
+.lead { font-size: 1.2em; color: var(--text); margin: 22px 0 28px; max-width: 34em; }
+.hero-cta { display: flex; align-items: center; gap: 14px 20px; flex-wrap: wrap; margin-bottom: 26px; }
+.hero-alt { margin: 0; color: var(--text-dim); }
+.hero-alt a { color: var(--text); }
+.hero-facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 6px 22px;
+  flex-wrap: wrap;
+  color: var(--text-dim);
+}
+.hero-facts li::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 9px; background: var(--green); box-shadow: 2px 2px 0 var(--outline); }
+
+.scene-frame {
+  margin: 8px;
+  border: 4px solid var(--outline);
+  box-shadow: 0 0 0 4px #d8dcff, 0 0 0 8px var(--outline), 16px 16px 0 rgba(0, 0, 0, 0.4);
+  background: #000;
+}
+.scene-frame.small { max-width: 420px; margin-top: 26px; }
+.pixel { width: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.caption { color: var(--text-dim); margin: 18px 8px 0; font-size: 0.92em; }
+
+/* ---------- captura do app ---------- */
+.shot-panel { padding: 12px; }
+.shot-panel img { width: 100%; border: 4px solid var(--outline); }
+
+/* ---------- recursos ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.card p:last-child { margin-bottom: 0; }
+.card p { color: var(--text-dim); }
+
+/* ---------- receita ---------- */
+.recipe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 36px;
+  align-items: center;
+  padding: 36px;
+}
+.steps { list-style: none; margin: 0 0 20px; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.steps li { display: flex; align-items: baseline; gap: 14px; }
+.steps span {
+  flex-shrink: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  color: var(--outline);
+  background: var(--gold);
+  padding: 7px 8px 6px 9px;
+  box-shadow: 3px 3px 0 var(--outline);
+}
+.tiers {
+  list-style: none;
+  margin: 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  background: var(--panel-lo);
+  border: 4px solid var(--outline);
+}
+.tiers li { display: flex; align-items: center; gap: 12px; }
+.tiers svg { flex-shrink: 0; }
+.tiers small { display: block; color: var(--text-dim); font-size: 0.8em; }
+.tiers .lendario b { color: var(--gold); font-weight: 400; }
+.tiers b { font-weight: 400; }
+
+/* ---------- widget ---------- */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 56px;
+  align-items: center;
+}
+.widget-shot {
+  width: min(100%, 340px);
+  margin: 0 auto;
+  border: 4px solid var(--outline);
+  box-shadow: 0 0 0 4px var(--panel-hi), 0 0 0 8px var(--outline), 16px 16px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- download ---------- */
+.section-lead { margin-top: -10px; margin-bottom: 26px; color: var(--text-dim); }
+.downloads { margin-bottom: 28px; }
+.dl { display: flex; flex-direction: column; align-items: flex-start; }
+.dl h3 { font-size: 0.85rem; }
+.dl .px-btn { margin: 6px 0 18px; }
+.dl .hint { font-size: 0.88em; margin-bottom: 0; }
+.dl.is-yours { box-shadow: inset 4px 4px 0 var(--panel-hi), inset -4px -4px 0 var(--panel-lo), 0 0 0 4px var(--gold), 8px 8px 0 rgba(0, 0, 0, 0.4); }
+.dl.is-yours h3::after { content: ' · o seu'; color: var(--teal); }
+code {
+  display: inline-block;
+  margin-top: 6px;
+  font-family: 'VT323', monospace;
+  font-size: 0.95em;
+  color: var(--text);
+  background: var(--outline);
+  padding: 3px 8px;
+  word-break: break-all;
+  user-select: all;
+}
+b { font-weight: 400; color: var(--text); }
+
+/* ---------- rodapé ---------- */
+.foot { padding-top: 8px; padding-bottom: 40px; color: var(--text-dim); text-align: center; font-size: 0.9em; }
+
+@media (max-width: 900px) {
+  .hero, .recipe, .split { grid-template-columns: minmax(0, 1fr); }
+  .hero { gap: 36px; padding-top: 12px; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  section { margin-bottom: 60px; }
+  .split-art { order: 2; }
+}
+@media (max-width: 520px) {
+  body { font-size: 21px; }
+  main, .top, .foot { padding-left: 16px; padding-right: 16px; }
+  .panel, .recipe { padding: 18px; }
+  .tiers { grid-template-columns: minmax(0, 1fr); }
+  .scene-frame { box-shadow: 0 0 0 4px #d8dcff, 0 0 0 8px var(--outline); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}

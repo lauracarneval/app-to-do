@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendário de Poções — to-do com um ateliê de poções em pixel art</title>
+<meta name="description" content="App desktop de tarefas com calendário, Pomodoro e um ateliê de poções em pixel art. Cada dia completo fortalece a poção do mês. Grátis, offline, para Windows, macOS e Ubuntu.">
+<meta property="og:title" content="Calendário de Poções">
+<meta property="og:description" content="Suas tarefas viram poções. To-do com calendário, Pomodoro e um ateliê em pixel art. Grátis e offline.">
+<meta property="og:image" content="https://lauracarneval.github.io/app-to-do/img/app.png">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" href="img/icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="#inicio">
+    <img src="img/icon.png" alt="" width="36" height="36">
+    <span>Calendário de Poções</span>
+  </a>
+  <nav class="top-nav" aria-label="Seções">
+    <a href="#recursos">Recursos</a>
+    <a href="#receita">A poção</a>
+    <a href="#download">Download</a>
+    <a href="https://github.com/lauracarneval/app-to-do" rel="noopener">GitHub</a>
+  </nav>
+</header>
+
+<main id="inicio">
+
+  <!-- ================= ABERTURA ================= -->
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">To-do · Calendário · Pomodoro</p>
+      <h1>Suas tarefas viram poções.</h1>
+      <p class="lead">Um app de tarefas para desktop com um ateliê em pixel art. Cada dia com tudo concluído fortalece a poção do mês: o frasco enche, muda de cor e ganha um lugar na estante.</p>
+      <div class="hero-cta">
+        <a class="px-btn big" id="mainDownload" href="#download">Baixar grátis</a>
+        <p class="hero-alt" id="altDownloads">Windows · macOS · Ubuntu</p>
+      </div>
+      <ul class="hero-facts">
+        <li>Grátis, sem conta</li>
+        <li>Funciona sem internet</li>
+        <li>Dados só no seu computador</li>
+      </ul>
+    </div>
+    <div class="hero-art">
+      <div class="scene-frame">
+        <img class="pixel" src="img/cenario.png" width="192" height="120" alt="O ateliê do app: estante com frascos, a poção do mês sobre a mesa, velas azuis, um gato olhando a janela e uma ampulheta na parede">
+      </div>
+      <p class="caption">O ateliê. Tudo aqui reage ao clique.</p>
+    </div>
+  </section>
+
+  <!-- ================= O APP ================= -->
+  <section class="panel shot-panel" aria-label="Tela do app">
+    <img src="img/app.png" width="1304" height="960" loading="lazy" alt="Tela principal: o ateliê à esquerda com a poção Elixir cintilante no nível 3, a ampulheta contando um foco, e o calendário do mês à direita com os dias completos em verde">
+  </section>
+
+  <!-- ================= RECURSOS ================= -->
+  <section id="recursos">
+    <h2>O que tem no ateliê</h2>
+    <div class="grid">
+      <article class="panel card">
+        <h3>A poção do mês</h3>
+        <p>Conclua todas as tarefas de um dia e a poção fica mais forte. A cada 5 dias completos ela evolui, de Água turva a Elixir lendário, e cada dia feito vira um frasquinho na estante.</p>
+      </article>
+      <article class="panel card">
+        <h3>Calendário por dia</h3>
+        <p>Tarefas organizadas por data. O calendário mostra de relance os dias pendentes e os completos, e o cartaz de pendências leva direto ao que ficou para trás.</p>
+      </article>
+      <article class="panel card">
+        <h3>Ampulheta de foco</h3>
+        <p>Um Pomodoro no tema: 25 minutos de foco, pausas curtas e longas, tudo ajustável. A areia desce na parede do ateliê e os focos do dia ficam registrados.</p>
+      </article>
+      <article class="panel card">
+        <h3>Um cenário vivo</h3>
+        <p>A caveira chacoalha, o gato olha para trás, as velas apagam com um sopro, os livros caem em dominó e voltam por mágica. O vento balança os cartazes da parede.</p>
+      </article>
+      <article class="panel card">
+        <h3>Widget sempre visível</h3>
+        <p>Uma janelinha que fica por cima das outras com o cenário, a ampulheta e as tarefas de hoje. Marcar num lado atualiza o outro na hora.</p>
+      </article>
+      <article class="panel card">
+        <h3>Offline de verdade</h3>
+        <p>Sem conta, sem nuvem, sem rastreio. Seus dados ficam num arquivo dentro da pasta que você escolher, como um cofre. Troque de pasta quando quiser.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= A RECEITA ================= -->
+  <section id="receita" class="panel recipe">
+    <div class="recipe-text">
+      <h2>A receita</h2>
+      <ol class="steps">
+        <li><span>1</span>Anote as tarefas do dia.</li>
+        <li><span>2</span>Conclua todas. O dia fica verde no calendário.</li>
+        <li><span>3</span>A poção do mês enche e, a cada 5 dias completos, evolui.</li>
+      </ol>
+      <p class="dim">Mês novo, frasco novo. As poções dos meses anteriores ficam guardadas no livro de conquistas.</p>
+    </div>
+    <ul class="tiers" id="tiers" aria-label="Estágios da poção"></ul>
+  </section>
+
+  <!-- ================= WIDGET ================= -->
+  <section class="split">
+    <div class="split-art">
+      <img class="widget-shot" src="img/widget.png" width="400" height="800" loading="lazy" alt="O widget: cenário, ampulheta e as tarefas de hoje numa janela estreita">
+    </div>
+    <div class="split-text">
+      <h2>No cantinho da tela</h2>
+      <p>O widget acompanha você enquanto trabalha em outra coisa. O relógio da ampulheta é o mesmo do app: inicie num, pause no outro.</p>
+      <p>Quando o foco termina, o ateliê avisa com um sininho 8-bit e uma notificação do sistema. As duas coisas podem ser desligadas nos ajustes.</p>
+      <div class="scene-frame small">
+        <img class="pixel" src="img/cenario-domino.png" width="192" height="120" loading="lazy" alt="Os livros do topo da estante caídos em efeito dominó">
+      </div>
+      <p class="caption">Clique num livro da estante. Depois de um instante, eles voltam em pé num passe de mágica.</p>
+    </div>
+  </section>
+
+  <!-- ================= DOWNLOAD ================= -->
+  <section id="download">
+    <h2>Baixar o Calendário de Poções</h2>
+    <p class="section-lead">Grátis. Escolha o seu sistema:</p>
+    <div class="grid downloads">
+      <article class="panel card dl" data-os="windows">
+        <h3>Windows</h3>
+        <p class="dim">Windows 10 e 11 · 64 bits</p>
+        <a class="px-btn" href="https://github.com/lauracarneval/app-to-do/releases/latest/download/Calendario-de-Pocoes-Windows-Setup.exe">Baixar .exe</a>
+        <p class="hint">No aviso do SmartScreen, clique em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>.</p>
+      </article>
+      <article class="panel card dl" data-os="mac">
+        <h3>macOS</h3>
+        <p class="dim">Intel e Apple Silicon</p>
+        <a class="px-btn" href="https://github.com/lauracarneval/app-to-do/releases/latest/download/Calendario-de-Pocoes-macOS.dmg">Baixar .dmg</a>
+        <p class="hint">Arraste para <b>Aplicativos</b>, clique no app com o botão direito e escolha <b>Abrir</b>. Se o sistema disser que está danificado, rode no Terminal:<br><code>xattr -cr "/Applications/Calendário de Poções.app"</code></p>
+      </article>
+      <article class="panel card dl" data-os="linux">
+        <h3>Ubuntu</h3>
+        <p class="dim">Ubuntu, Debian e derivados · 64 bits</p>
+        <a class="px-btn" href="https://github.com/lauracarneval/app-to-do/releases/latest/download/calendario-de-pocoes-ubuntu.deb">Baixar .deb</a>
+        <p class="hint">Na pasta do download, instale com:<br><code>sudo apt install ./calendario-de-pocoes-ubuntu.deb</code></p>
+      </article>
+    </div>
+    <p class="dim center">Os instaladores não têm assinatura digital paga, por isso o sistema pede uma confirmação na primeira vez. O código é público: <a href="https://github.com/lauracarneval/app-to-do" rel="noopener">veja no GitHub</a> ou confira <a href="https://github.com/lauracarneval/app-to-do/releases" rel="noopener">todas as versões</a>.</p>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <p>Feito por Laura Viana · Fontes Press Start 2P e VT323 (licença OFL)</p>
+</footer>
+
+<script src="page.js"></script>
+</body>
+</html>

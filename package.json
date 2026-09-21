@@ -1,9 +1,17 @@
 {
   "name": "calendario-de-pocoes",
   "productName": "Calendário de Poções",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "To-do com calendário e um ateliê de poções em pixel art. Offline first: os dados ficam numa pasta escolhida por você.",
-  "author": "Laura Viana",
+  "author": {
+    "name": "Laura Viana",
+    "email": "contatovianalaura@gmail.com"
+  },
+  "homepage": "https://lauracarneval.github.io/app-to-do/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lauracarneval/app-to-do.git"
+  },
   "license": "UNLICENSED",
   "private": true,
   "main": "main.js",
@@ -11,7 +19,8 @@
     "start": "electron .",
     "test": "electron test/e2e.js",
     "icon": "node scripts/make-icon.js",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never"
   },
   "devDependencies": {
     "electron": "^38.0.0",
@@ -40,7 +49,31 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico"
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "Calendario-de-Pocoes-Windows-Setup.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "artifactName": "Calendario-de-Pocoes-macOS.${ext}"
+    },
+    "linux": {
+      "target": [
+        "deb"
+      ],
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "executableName": "calendario-de-pocoes",
+      "synopsis": "To-do com calendário e um ateliê de poções em pixel art",
+      "artifactName": "calendario-de-pocoes-ubuntu.${ext}"
     }
   }
 }
