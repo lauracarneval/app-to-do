@@ -308,6 +308,7 @@
     renderCalendar();
     renderTasks();
     renderPotionHUD();
+    renderFocusHud();
     refreshPosterSprites();
     drawFrame();
   }
@@ -459,7 +460,203 @@
   }
 
   /* ------------------------------------------------------------
-     PERGAMINHO — aberto pelos cartazes, pelo livro e pelo bilhete
+     AMPULHETA (POMODORO)
+     O relógio fica no processo principal (main.js) e chega aqui por mensagens: app e
+     widget mostram sempre o mesmo tempo. Cada foco que vai até o fim é somado ao dia
+     em data.pomodoros, no mesmo arquivo das tarefas.
+     ------------------------------------------------------------ */
+  const focusHud = document.getElementById('focusHud');
+  const focusPhase = document.getElementById('focusPhase');
+  const focusCount = document.getElementById('focusCount');
+  const focusTime = document.getElementById('focusTime');
+  const focusFill = document.getElementById('focusFill');
+  const focusToggle = document.getElementById('focusToggle');
+  const PHASE_NAMES = { focus: 'Foco', short: 'Pausa curta', long: 'Pausa longa' };
+  const APP_TITLE = document.title;
+
+  let pomo = null;        /* último estado recebido do processo principal */
+  let hourglassT = 0;     /* pulinho da ampulheta ao toque */
+
+  function focusCounts() {
+    if (!data.pomodoros || typeof data.pomodoros !== 'object' || Array.isArray(data.pomodoros)) data.pomodoros = {};
+    return data.pomodoros;
+  }
+
+  function focosTexto(n) {
+    return n === 0 ? 'nenhum foco' : n === 1 ? '1 foco' : n + ' focos';
+  }
+
+  function clockText(ms) {
+    const s = Math.ceil(ms / 1000);
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  function renderFocusHud() {
+    if (!pomo) return;
+    const comecou = pomo.running || pomo.remainingMs < pomo.totalMs;
+    const relogio = clockText(pomo.remainingMs);
+
+    focusHud.classList.toggle('is-break', pomo.phase !== 'focus');
+    focusHud.classList.toggle('is-paused', !pomo.running && comecou);
+    focusPhase.textContent = pomo.phase === 'focus'
+      ? 'Foco ' + (pomo.cycle + 1) + ' de ' + pomo.settings.perLong
+      : PHASE_NAMES[pomo.phase];
+    focusCount.textContent = focosTexto(focusCounts()[formatDate(new Date())] || 0) + ' hoje';
+    focusTime.textContent = relogio;
+    focusFill.style.width = (100 - pomo.remainingMs / pomo.totalMs * 100).toFixed(1) + '%';
+    focusToggle.textContent = pomo.running ? 'Pausar' : comecou ? 'Continuar' : 'Iniciar';
+
+    /* o tempo também aparece no título da janela (Alt+Tab, barra de tarefas) */
+    document.title = comecou ? relogio + ' · ' + PHASE_NAMES[pomo.phase] + ' — ' + APP_TITLE : APP_TITLE;
+  }
+
+  /* sininho 8-bit: sobe quando o foco termina, desce quando a pausa acaba */
+  function chime(subindo) {
+    try {
+      chime.ctx = chime.ctx || new AudioContext();
+      const ac = chime.ctx;
+      const notas = subindo ? [523.25, 659.25, 783.99, 1046.5] : [783.99, 659.25, 523.25];
+      notas.forEach(function (freq, i) {
+        const t = ac.currentTime + i * 0.14;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'square';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.linearRampToValueAtTime(0.07, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.start(t);
+        osc.stop(t + 0.32);
+      });
+    } catch (e) { /* sem áudio: o aviso visual basta */ }
+  }
+
+  /* só uma janela recebe este aviso (ver main.js): é ela que grava o foco */
+  function onFocusFinished(info) {
+    if (info.ended === 'focus') {
+      const hoje = formatDate(new Date());
+      const counts = focusCounts();
+      counts[hoje] = (counts[hoje] || 0) + 1;
+      saveData();
+      renderFocusHud();
+      showToast(info.next === 'long' ? 'Foco concluído! Hora da pausa longa.' : 'Foco concluído! Hora da pausa.');
+      for (let i = 0; i < 16; i++) {
+        sparks.push({
+          x: HGX + 4, y: HGY + 6,
+          vx: (Math.random() - 0.5) * 2.4,
+          vy: -0.6 - Math.random() * 1.8,
+          life: 8 + Math.floor(Math.random() * 8),
+          color: ['#ffe27a', '#f2b632', '#ffffff'][Math.floor(Math.random() * 3)]
+        });
+      }
+    } else {
+      showToast('A pausa acabou. De volta ao caldeirão!');
+    }
+    if (info.sound) chime(info.ended === 'focus');
+  }
+
+  function setupFocus() {
+    focusHud.hidden = false;
+    focusToggle.addEventListener('click', function () {
+      desktop.pomodoroCmd(pomo && pomo.running ? 'pause' : 'start');
+    });
+    document.getElementById('focusSkip').addEventListener('click', function () { desktop.pomodoroCmd('skip'); });
+    document.getElementById('focusReset').addEventListener('click', function () { desktop.pomodoroCmd('reset'); });
+    document.getElementById('focusSettings').addEventListener('click', function () { openScroll('focus'); });
+
+    desktop.onPomodoroState(function (state) {
+      pomo = state;
+      renderFocusHud();
+    });
+    desktop.onPomodoroFinished(onFocusFinished);
+    desktop.pomodoroGet().then(function (state) {
+      if (!state || pomo) return;
+      pomo = state;
+      renderFocusHud();
+    });
+  }
+
+  /* pergaminho da ampulheta: focos feitos e ajustes dos tempos */
+  function buildFocus() {
+    scrollTitle.textContent = 'Ampulheta';
+    const counts = focusCounts();
+    const total = Object.keys(counts).reduce(function (soma, k) { return soma + (Number(counts[k]) || 0); }, 0);
+    const hoje = counts[formatDate(new Date())] || 0;
+    scrollBody.appendChild(el('p', 'focus-stats', 'Hoje: ' + focosTexto(hoje) + ' · Desde o começo: ' + total));
+
+    scrollBody.appendChild(el('h3', 'scroll-sub', 'Ajustes'));
+    const form = el('form', 'focus-form');
+    const campos = [
+      ['focus', 'Foco (min)', 1, 180],
+      ['short', 'Pausa curta (min)', 1, 60],
+      ['long', 'Pausa longa (min)', 1, 120]
+    ];
+    const inputs = {};
+    campos.forEach(function (c) {
+      const label = el('label', 'focus-field');
+      label.appendChild(el('span', null, c[1]));
+      const input = el('input');
+      input.type = 'number';
+      input.min = c[2];
+      input.max = c[3];
+      input.step = 1;
+      input.required = true;
+      input.dataset.key = c[0];
+      inputs[c[0]] = input;
+      label.appendChild(input);
+      form.appendChild(label);
+    });
+    const somLabel = el('label', 'focus-field');
+    somLabel.appendChild(el('span', null, 'Som ao terminar'));
+    const som = el('input');
+    som.type = 'checkbox';
+    som.dataset.key = 'sound';
+    somLabel.appendChild(som);
+    form.appendChild(somLabel);
+
+    const avisoLabel = el('label', 'focus-field');
+    avisoLabel.appendChild(el('span', null, 'Notificação ao terminar'));
+    const aviso = el('input');
+    aviso.type = 'checkbox';
+    aviso.dataset.key = 'notify';
+    avisoLabel.appendChild(aviso);
+    form.appendChild(avisoLabel);
+
+    const salvar = el('button', 'pending-btn', 'Guardar ajustes');
+    salvar.type = 'submit';
+    form.appendChild(salvar);
+    scrollBody.appendChild(form);
+    const status = el('p', 'scroll-note', '');
+    status.setAttribute('aria-live', 'polite');
+    scrollBody.appendChild(status);
+
+    function preencher(settings) {
+      campos.forEach(function (c) { inputs[c[0]].value = settings[c[0]]; });
+      som.checked = settings.sound;
+      aviso.checked = settings.notify;
+    }
+    if (pomo) preencher(pomo.settings);
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const novo = { sound: som.checked, notify: aviso.checked };
+      campos.forEach(function (c) { novo[c[0]] = Number(inputs[c[0]].value); });
+      desktop.pomodoroCmd('settings', novo);
+      /* relê do processo principal: mostra os valores como ficaram de fato */
+      desktop.pomodoroGet().then(function (state) {
+        if (!state) return;
+        preencher(state.settings);
+        status.textContent = state.running || state.remainingMs < state.totalMs
+          ? 'Ajustes guardados. Valem a partir da próxima fase.'
+          : 'Ajustes guardados.';
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------
+     PERGAMINHO — aberto pelos cartazes, pelo livro, pelo bilhete e pela ampulheta
      ------------------------------------------------------------ */
   const scrollOverlay = document.getElementById('scrollOverlay');
   const scrollTitle = document.getElementById('scrollTitle');
@@ -1016,6 +1213,7 @@
     else if (kind === 'pending') buildPending();
     else if (kind === 'book') buildAchievements();
     else if (kind === 'folder') buildFolder();
+    else if (kind === 'focus') buildFocus();
     else buildQuote();
     scrollOverlay.hidden = false;
     scrollOpen = true;
@@ -1050,6 +1248,11 @@
   const bg = document.createElement('canvas');
   bg.width = SW;
   bg.height = SH;
+  /* camada da frente: mesa e o que fica fixo sobre ela. O cartaz está na parede ATRÁS da
+     mesa, então quando cai é desenhado antes desta camada e some por trás do móvel. */
+  const fg = document.createElement('canvas');
+  fg.width = SW;
+  fg.height = SH;
 
   const INK = '#14102b';
   let tick = 0;
@@ -1076,6 +1279,7 @@
 
   function drawBackground() {
     const c = bg.getContext('2d');
+    const f = fg.getContext('2d');
     const rnd = makeRng(7);
 
     /* parede de pedra */
@@ -1121,6 +1325,13 @@
     R(c, 73, 20, 1, 1, '#171a4d');
     R(c, 87, 14, 1, 1, '#171a4d');
 
+    /* prateleirinha da ampulheta (a ampulheta é animada) */
+    R(c, HGX - 3, HGY + 14, 15, 4, INK);
+    R(c, HGX - 2, HGY + 15, 13, 2, '#7a4a2a');
+    R(c, HGX - 2, HGY + 15, 13, 1, '#9c6236');
+    R(c, HGX - 1, HGY + 18, 2, 2, INK);
+    R(c, HGX + 8, HGY + 18, 2, 2, INK);
+
     /* ervas penduradas */
     R(c, 130, 0, 1, 7, INK);
     R(c, 127, 7, 7, 2, '#5c3420');
@@ -1145,11 +1356,7 @@
     R(c, 8, 80, 3, 2, '#3d2318');
     R(c, 59, 80, 3, 2, '#3d2318');
 
-    /* livros em cima da estante (a caveira é animada) */
-    R(c, 40, 5, 4, 6, '#8c2f4a');
-    R(c, 44, 4, 3, 7, '#2f6f8c');
-    R(c, 47, 6, 4, 5, '#c9a46b');
-    R(c, 52, 8, 8, 3, '#4a7a3a');
+    /* em cima da estante, a caveira e os livros são animados */
 
     /* caixote */
     R(c, 149, 63, 36, 34, INK);
@@ -1162,34 +1369,35 @@
     R(c, 150, 64, 34, 1, '#9c6236');
     R(c, 149, 97, 36, 2, 'rgba(0,0,0,0.3)');
 
+    /* ---- daqui até a vinheta: camada da frente (fg), desenhada por cima do cartaz que cai ---- */
     /* mesa */
-    R(c, 71, 75, 70, 29, INK);
-    R(c, 72, 75, 68, 28, '#5c3420');
-    for (let x = 83; x < 140; x += 12) R(c, x, 75, 1, 28, '#3d2318');
-    R(c, 72, 75, 68, 2, '#3d2318');
-    R(c, 67, 69, 78, 6, INK);
-    R(c, 68, 70, 76, 4, '#7a4a2a');
-    R(c, 68, 70, 76, 1, '#b07840');
-    R(c, 69, 104, 74, 2, 'rgba(0,0,0,0.3)');
+    R(f, 71, 75, 70, 29, INK);
+    R(f, 72, 75, 68, 28, '#5c3420');
+    for (let x = 83; x < 140; x += 12) R(f, x, 75, 1, 28, '#3d2318');
+    R(f, 72, 75, 68, 2, '#3d2318');
+    R(f, 67, 69, 78, 6, INK);
+    R(f, 68, 70, 76, 4, '#7a4a2a');
+    R(f, 68, 70, 76, 1, '#b07840');
+    R(f, 69, 104, 74, 2, 'rgba(0,0,0,0.3)');
     /* bilhete da música do dia, com uma colcheia desenhada */
-    R(c, 100, 82, 10, 11, '#e8d9a8');
-    R(c, 106, 84, 1, 6, '#3d2318');
-    R(c, 107, 84, 2, 1, '#3d2318');
-    R(c, 108, 85, 1, 2, '#3d2318');
-    R(c, 104, 89, 3, 2, '#3d2318');
+    R(f, 100, 82, 10, 11, '#e8d9a8');
+    R(f, 106, 84, 1, 6, '#3d2318');
+    R(f, 107, 84, 2, 1, '#3d2318');
+    R(f, 108, 85, 1, 2, '#3d2318');
+    R(f, 104, 89, 3, 2, '#3d2318');
 
     /* castiçal (as chamas são animadas) */
-    R(c, 74, 67, 9, 3, '#8a8fa8');
-    R(c, 74, 67, 9, 1, '#b8bdd0');
-    R(c, 78, 58, 1, 9, '#8a8fa8');
-    R(c, 74, 60, 9, 1, '#8a8fa8');
-    R(c, 73, 54, 3, 6, '#e8e4d8');
-    R(c, 81, 54, 3, 6, '#e8e4d8');
-    R(c, 77, 51, 3, 7, '#e8e4d8');
+    R(f, 74, 67, 9, 3, '#8a8fa8');
+    R(f, 74, 67, 9, 1, '#b8bdd0');
+    R(f, 78, 58, 1, 9, '#8a8fa8');
+    R(f, 74, 60, 9, 1, '#8a8fa8');
+    R(f, 73, 54, 3, 6, '#e8e4d8');
+    R(f, 81, 54, 3, 6, '#e8e4d8');
+    R(f, 77, 51, 3, 7, '#e8e4d8');
 
     /* frasquinho na mesa (o livro de conquistas é animado) */
-    R(c, 140, 62, 1, 2, '#cfe8ff');
-    R(c, 139, 64, 3, 6, '#d63b5a');
+    R(f, 140, 62, 1, 2, '#cfe8ff');
+    R(f, 139, 64, 3, 6, '#d63b5a');
 
     /* vinheta nas bordas */
     R(c, 0, 0, 3, SH, 'rgba(5,4,20,0.35)');
@@ -1522,6 +1730,100 @@
     }
   }
 
+  /* -------- livros em cima da estante: em pé, lado a lado. Ao toque em qualquer um,
+     efeito dominó: ele tomba e derruba os vizinhos em sequência, cada um apoiado no
+     seguinte, e o último deita no tampo. Depois de um instante todos voltam em pé
+     num "puf" de mágica (como os cartazes). -------- */
+  const SHELF_TOP = 11;                       /* tampo da estante */
+  const BOOK_ANGLES = [0, 12, 25, 38, 50, 62]; /* graus de inclinação por nível */
+  const BOOK_FLAT = BOOK_ANGLES.length;       /* nível seguinte: deitado */
+  const BOOK_LEAN_MAX = 3;                    /* quem se apoia no vizinho para por aqui (38 graus) */
+  const DOMINO_REST = 14;                     /* quadros caídos antes de voltar */
+  const shelfBooks = [
+    { x: 40, w: 4, h: 7, color: '#8c2f4a', light: '#c25a78' },
+    { x: 44, w: 4, h: 8, color: '#2f6f8c', light: '#5aa3c2' },
+    { x: 48, w: 4, h: 6, color: '#c9a46b', light: '#efd6a4' },
+    { x: 52, w: 4, h: 7, color: '#4a7a3a', light: '#7cb068' }
+  ];
+  shelfBooks.forEach(function (b) { b.hop = 0; });
+  const domino = { active: false, start: 0, dir: 1, count: 0, t: 0 };
+
+  /* nível de inclinação do livro i: cada um começa a tombar um quadro depois do anterior */
+  function bookLean(i) {
+    if (!domino.active) return 0;
+    const k = (i - domino.start) * domino.dir;
+    if (k < 0 || k >= domino.count) return 0;
+    const max = k === domino.count - 1 ? BOOK_FLAT : BOOK_LEAN_MAX;
+    return Math.max(0, Math.min(max, domino.t - k));
+  }
+
+  /* o livro inclina girando sobre o canto de baixo: desenhado linha a linha, deslocando as de cima */
+  function paintBook(b, lean, dir, hop) {
+    if (lean >= BOOK_FLAT) {
+      const fx = dir > 0 ? b.x + 1 : b.x + b.w - 1 - b.h;
+      R(ctx, fx, SHELF_TOP - b.w, b.h, b.w, b.color);
+      R(ctx, dir > 0 ? fx + b.h - 2 : fx + 1, SHELF_TOP - b.w, 1, b.w, b.light);
+      R(ctx, fx, SHELF_TOP - 1, b.h, 1, 'rgba(0,0,0,0.25)');
+      return;
+    }
+    const rad = BOOK_ANGLES[lean] * Math.PI / 180;
+    const rows = Math.max(2, Math.round(b.h * Math.cos(rad)));
+    const shift = b.h * Math.sin(rad);
+    for (let r = 0; r < rows; r++) {   /* r = 0 é a linha de baixo */
+      const x = b.x + dir * Math.round(shift * r / (rows - 1));
+      const y = SHELF_TOP - 1 - r - hop;
+      R(ctx, x, y, b.w, 1, r === rows - 2 ? b.light : b.color);
+      R(ctx, dir > 0 ? x : x + b.w - 1, y, 1, 1, 'rgba(0,0,0,0.25)');
+    }
+  }
+
+  function drawShelfBooks() {
+    /* os do fim da fila primeiro: quem tomba fica por cima de quem o apoia */
+    const ordem = shelfBooks.map(function (b, i) { return i; });
+    if (domino.active && domino.dir > 0) ordem.reverse();
+    ordem.forEach(function (i) {
+      const b = shelfBooks[i];
+      paintBook(b, bookLean(i), domino.dir, b.hop > 3 ? 2 : b.hop > 0 ? 1 : 0);
+    });
+  }
+
+  function stepShelfBooks() {
+    shelfBooks.forEach(function (b) { if (b.hop > 0) b.hop--; });
+    if (!domino.active) return;
+    domino.t++;
+    if (domino.t >= domino.count - 1 + BOOK_FLAT + DOMINO_REST) returnShelfBooks();
+  }
+
+  /* do livro clicado em diante, para a direita; clicando no último, a fila cai para a esquerda */
+  function startDomino(i) {
+    if (domino.active || !shelfBooks[i]) return;
+    const ultimo = shelfBooks.length - 1;
+    domino.active = true;
+    domino.start = i;
+    domino.dir = i === ultimo ? -1 : 1;
+    domino.count = i === ultimo ? shelfBooks.length : shelfBooks.length - i;
+    domino.t = 0;
+  }
+
+  /* voltam todos em pé, com faíscas e um pulinho */
+  function returnShelfBooks() {
+    const cores = ['#c990ff', '#ffffff', '#8fe3ff'];
+    shelfBooks.forEach(function (b, i) {
+      if (bookLean(i) === 0) return;
+      for (let n = 0; n < 8; n++) {
+        sparks.push({
+          x: b.x + b.w / 2, y: SHELF_TOP - b.h / 2,
+          vx: (Math.random() - 0.5) * 2.2,
+          vy: -0.5 - Math.random() * 1.4,
+          life: 6 + Math.floor(Math.random() * 6),
+          color: cores[n % cores.length]
+        });
+      }
+      b.hop = 6;
+    });
+    domino.active = false;
+  }
+
   /* -------- livro de conquistas em cima da mesa -------- */
   let bookT = 0;
   function drawBook() {
@@ -1532,15 +1834,70 @@
     R(ctx, 130, 66 + dy, 2, 1, '#f2b632');
   }
 
+  /* -------- ampulheta (pomodoro) na prateleirinha da parede: a areia desce conforme
+     o tempo da fase. Dourada no foco, verde-água na pausa. Ao toque, abre os ajustes. -------- */
+  const HGX = 113, HGY = 11;   /* canto de cima; a ampulheta tem 9x14 */
+  /* interior do vidro por linha: [linha, x inicial, x final] */
+  const HG_GLASS = [[2, 2, 6], [3, 2, 6], [4, 3, 5], [5, 4, 4], [6, 4, 4], [7, 4, 4], [8, 4, 4], [9, 3, 5], [10, 2, 6], [11, 2, 6]];
+  /* areia de cima, na ordem em que some por último (o meio afunda primeiro) */
+  const HG_TOP = [[4, 5], [3, 4], [5, 4], [4, 4], [2, 3], [6, 3], [3, 3], [5, 3], [4, 3], [2, 2], [6, 2], [3, 2], [5, 2], [4, 2]];
+  /* areia de baixo, na ordem em que o monte cresce (do meio para as bordas) */
+  const HG_BOTTOM = [[4, 11], [3, 11], [5, 11], [2, 11], [6, 11], [4, 10], [3, 10], [5, 10], [2, 10], [6, 10], [4, 9], [3, 9], [5, 9], [4, 8]];
+
+  function drawHourglass() {
+    const y0 = HGY + (hourglassT > 3 ? -2 : hourglassT > 0 ? -1 : 0);
+    const p = pomo ? Math.min(1, Math.max(0, 1 - pomo.remainingMs / pomo.totalMs)) : 0;
+    const pausa = !!pomo && pomo.phase !== 'focus';
+    const areia = pausa ? '#3cd4c0' : '#f2b632';
+    const areiaClara = pausa ? '#a8fff0' : '#ffe27a';
+
+    /* tampas e hastes de madeira */
+    R(ctx, HGX - 1, y0 - 1, 11, 3, INK);
+    R(ctx, HGX, y0, 9, 1, '#b07840');
+    R(ctx, HGX, y0 + 1, 9, 1, '#5c3420');
+    R(ctx, HGX - 1, y0 + 12, 11, 3, INK);
+    R(ctx, HGX, y0 + 12, 9, 1, '#b07840');
+    R(ctx, HGX, y0 + 13, 9, 1, '#5c3420');
+    R(ctx, HGX, y0 + 2, 1, 10, '#7a4a2a');
+    R(ctx, HGX + 8, y0 + 2, 1, 10, '#7a4a2a');
+
+    /* vidro */
+    HG_GLASS.forEach(function (g) {
+      R(ctx, HGX + g[1] - 1, y0 + g[0], 1, 1, INK);
+      R(ctx, HGX + g[2] + 1, y0 + g[0], 1, 1, INK);
+      R(ctx, HGX + g[1], y0 + g[0], g[2] - g[1] + 1, 1, 'rgba(190,225,255,0.22)');
+    });
+
+    /* areia: o que falta em cima, o que já passou embaixo */
+    const emCima = Math.ceil((1 - p) * HG_TOP.length);
+    const embaixo = HG_TOP.length - emCima;
+    HG_TOP.slice(0, emCima).forEach(function (s) { R(ctx, HGX + s[0], y0 + s[1], 1, 1, areia); });
+    HG_BOTTOM.slice(0, embaixo).forEach(function (s) { R(ctx, HGX + s[0], y0 + s[1], 1, 1, areia); });
+
+    /* fio de areia caindo enquanto o tempo corre */
+    if (pomo && pomo.running && emCima > 0) {
+      const topoDoMonte = embaixo > 13 ? 8 : embaixo > 10 ? 9 : embaixo > 5 ? 10 : embaixo > 0 ? 11 : 12;
+      for (let r = 6; r < topoDoMonte; r++) {
+        if ((r + tick) % 2 === 0) R(ctx, HGX + 4, y0 + r, 1, 1, areiaClara);
+      }
+    }
+  }
+
   /* -------- toque/clique nos objetos do cenário -------- */
   function hotspotAt(x, y) {
     if (x >= 19 && x <= 34 && y >= 0 && y <= 12) return 'skull';
+    for (let i = 0; i < shelfBooks.length; i++) {
+      const b = shelfBooks[i];
+      if (!domino.active && x >= b.x && x < b.x + b.w && y >= SHELF_TOP - b.h - 2 && y <= SHELF_TOP) return 'shelfbook' + i;
+    }
     if (x >= 156 && x <= 178 && y >= 40 && y <= 64) return 'cat';
     if (x >= 70 && x <= 87 && y >= 43 && y <= 70) return 'candles';
     if (x >= 66 && x <= 81 && y >= 18 && y <= 36 && posters.recipe.state === 'wall') return 'recipe';
     if (x >= 81 && x <= 94 && y >= 12 && y <= 26 && posters.pending.state === 'wall') return 'pending';
     if (x >= 122 && x <= 139 && y >= 62 && y <= 71) return 'book';
     if (x >= 98 && x <= 112 && y >= 80 && y <= 95) return 'note';
+    /* a ampulheta só funciona no app desktop (o relógio fica no processo principal) */
+    if (desktop && x >= HGX - 2 && x <= HGX + 10 && y >= HGY - 2 && y <= HGY + 16) return 'hourglass';
     return null;
   }
 
@@ -1556,12 +1913,14 @@
     const p = scenePoint(e);
     const alvo = hotspotAt(p.x, p.y);
     if (alvo === 'skull') skullT = SKULL_RATTLE;
+    else if (alvo && alvo.indexOf('shelfbook') === 0) startDomino(Number(alvo.slice(9)));
     else if (alvo === 'cat' && catT === 0) catT = CAT_LOOK;
     else if (alvo === 'candles' && candleT === 0) candleT = CANDLE_BLOW;
     else if (alvo === 'recipe') dropPoster(alvo);
     else if (alvo === 'pending') { posters.pending.wob = 8; openScroll('pending'); }
     else if (alvo === 'book') { bookT = 6; openScroll('book'); }
     else if (alvo === 'note') openScroll('note');
+    else if (alvo === 'hourglass') { hourglassT = 6; openScroll('focus'); }
     if (alvo) drawFrame();
   });
 
@@ -1711,13 +2070,16 @@
     ctx.drawImage(bg, 0, 0);
     drawWindow();
     drawPosters(false);
+    drawPosters(true);   /* caindo: atrás da mesa */
+    ctx.drawImage(fg, 0, 0);
     drawBook();
+    drawShelfBooks();
+    drawHourglass();
     drawSkull();
     drawCat();
     drawCandles();
     drawShelfBottles();
     drawFlask();
-    drawPosters(true);
     drawSparks();
   }
 
@@ -1759,6 +2121,8 @@
       desktop.onGoToDate(goToDate);
     }
 
+    setupFocus();
+
     /* outra janela (app <-> widget) salvou: recarrega os dados do arquivo */
     desktop.onDataChanged(function () {
       data = loadData();
@@ -1779,7 +2143,9 @@
     if (catT > 0) catT--;
     if (candleT > 0) candleT--;
     if (bookT > 0) bookT--;
+    if (hourglassT > 0) hourglassT--;
     stepPosters();
+    stepShelfBooks();
     stepParticles();
     stepWind();
     drawFrame();

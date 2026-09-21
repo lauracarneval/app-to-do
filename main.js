@@ -3,7 +3,7 @@
    Offline first: os dados do usuário ficam num arquivo JSON dentro
    da pasta escolhida no onboarding (como um cofre do Obsidian).
    ============================================================ */
-const { app, BrowserWindow, Menu, dialog, ipcMain, screen, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, dialog, ipcMain, screen, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -158,7 +158,7 @@ function createWidget() {
     return;
   }
   const area = screen.getPrimaryDisplay().workArea;
-  const size = { width: 400, height: 690 };
+  const size = { width: 400, height: Math.min(800, area.height - 48) }; /* cenário + ampulheta + tarefas */
   const saved = boundsOnScreen(readConfig().widgetBounds);
   widgetWin = new BrowserWindow(Object.assign({
     x: area.x + area.width - size.width - 24,
@@ -208,6 +208,169 @@ function reloadAppWindows() {
   if (mainWin) mainWin.loadFile(path.join(SRC, 'index.html'));
   if (widgetWin) widgetWin.loadFile(path.join(SRC, 'index.html'), { query: { widget: '1' } });
 }
+
+/* ------------------------------------------------------------
+   AMPULHETA (POMODORO)
+   O relógio mora no processo principal: app e widget mostram o mesmo tempo, e ele
+   segue contando mesmo se uma janela for fechada ou recarregada. O fim de cada fase
+   é calculado pelo horário (endsAt), então suspender o computador não atrasa nada.
+   Ciclo: foco -> pausa curta, e a cada "perLong" focos uma pausa longa. A pausa
+   começa sozinha quando o foco termina; o foco seguinte espera o usuário.
+   ------------------------------------------------------------ */
+const POMODORO_DEFAULTS = { focus: 25, short: 5, long: 15, perLong: 4, sound: true, notify: true };
+const POMODORO_LIMITS = { focus: [1, 180], short: [1, 60], long: [1, 120] };
+
+function cleanPomodoroSettings(raw) {
+  raw = raw && typeof raw === 'object' ? raw : {};
+  const out = {};
+  Object.keys(POMODORO_LIMITS).forEach(function (k) {
+    const n = Math.round(Number(raw[k]));
+    const lim = POMODORO_LIMITS[k];
+    out[k] = Number.isFinite(n) ? Math.min(lim[1], Math.max(lim[0], n)) : POMODORO_DEFAULTS[k];
+  });
+  out.perLong = POMODORO_DEFAULTS.perLong; /* fixo: pausa longa a cada 4 focos */
+  out.sound = typeof raw.sound === 'boolean' ? raw.sound : POMODORO_DEFAULTS.sound;
+  out.notify = typeof raw.notify === 'boolean' ? raw.notify : POMODORO_DEFAULTS.notify;
+  return out;
+}
+
+const pomodoro = {
+  settings: cleanPomodoroSettings(null),
+  phase: 'focus',
+  running: false,
+  endsAt: 0,          /* horário em que a fase atual termina (só vale com running) */
+  remainingMs: 0,     /* tempo restante enquanto está parado */
+  cycle: 0,           /* focos concluídos desde a última pausa longa */
+  interval: null,
+
+  init: function () {
+    this.settings = cleanPomodoroSettings(readConfig().pomodoro);
+    this.remainingMs = this.phaseMs(this.phase);
+  },
+
+  phaseMs: function (phase) {
+    return this.settings[phase] * 60000;
+  },
+
+  remaining: function () {
+    return this.running ? Math.max(0, this.endsAt - Date.now()) : this.remainingMs;
+  },
+
+  snapshot: function () {
+    return {
+      phase: this.phase,
+      running: this.running,
+      remainingMs: this.remaining(),
+      totalMs: this.phaseMs(this.phase),
+      cycle: this.cycle,
+      settings: Object.assign({}, this.settings)
+    };
+  },
+
+  broadcast: function () {
+    const snap = this.snapshot();
+    BrowserWindow.getAllWindows().forEach(function (win) {
+      if (!win.isDestroyed() && win !== splashWin) win.webContents.send('pomodoro:state', snap);
+    });
+    /* progresso no botão da barra de tarefas: verde contando, amarelo em pausa */
+    if (mainWin && !mainWin.isDestroyed()) {
+      const started = snap.running || snap.remainingMs < snap.totalMs;
+      if (started) mainWin.setProgressBar(Math.max(0.01, 1 - snap.remainingMs / snap.totalMs), { mode: snap.running ? 'normal' : 'paused' });
+      else mainWin.setProgressBar(-1);
+    }
+  },
+
+  setTicking: function (on) {
+    if (on && !this.interval) this.interval = setInterval(this.tick.bind(this), 250);
+    if (!on && this.interval) { clearInterval(this.interval); this.interval = null; }
+  },
+
+  start: function () {
+    if (this.running) return;
+    if (this.remainingMs <= 0) this.remainingMs = this.phaseMs(this.phase);
+    this.endsAt = Date.now() + this.remainingMs;
+    this.running = true;
+    this.setTicking(true);
+    this.broadcast();
+  },
+
+  pause: function () {
+    if (!this.running) return;
+    this.remainingMs = this.remaining();
+    this.running = false;
+    this.setTicking(false);
+    this.broadcast();
+  },
+
+  /* volta ao começo da fase atual */
+  reset: function () {
+    this.running = false;
+    this.setTicking(false);
+    this.remainingMs = this.phaseMs(this.phase);
+    this.broadcast();
+  },
+
+  /* vai para a próxima fase; "completed" diz se a fase foi até o fim (pular não conta foco) */
+  advance: function (completed) {
+    const ended = this.phase;
+    if (ended === 'focus' && completed) this.cycle++;
+    let next = 'focus';
+    if (ended === 'focus') next = this.cycle >= this.settings.perLong ? 'long' : 'short';
+    /* saindo da pausa longa (ou de uma curta com a meta já batida) a contagem recomeça */
+    else if (ended === 'long' || this.cycle >= this.settings.perLong) this.cycle = 0;
+    this.phase = next;
+    this.running = false;
+    this.setTicking(false);
+    this.remainingMs = this.phaseMs(next);
+    return { ended: ended, next: next };
+  },
+
+  skip: function () {
+    this.advance(false);
+    this.broadcast();
+  },
+
+  tick: function () {
+    if (!this.running) return;
+    if (Date.now() < this.endsAt) { this.broadcast(); return; }
+    const change = this.advance(true);
+    /* a pausa começa sozinha; o próximo foco espera o usuário */
+    if (change.next !== 'focus') {
+      this.endsAt = Date.now() + this.remainingMs;
+      this.running = true;
+      this.setTicking(true);
+    }
+    this.broadcast();
+    this.announce(change);
+  },
+
+  announce: function (change) {
+    const focoAcabou = change.ended === 'focus';
+    const title = focoAcabou ? 'Foco concluído!' : 'A pausa acabou';
+    const body = focoAcabou
+      ? (change.next === 'long' ? 'Pausa longa de ' : 'Pausa de ') + this.settings[change.next] + ' min. Afaste-se do caldeirão.'
+      : 'Vire a ampulheta quando quiser começar o próximo foco.';
+    /* só uma janela recebe o fim da fase: é ela que grava o foco e toca o som */
+    const target = [mainWin, widgetWin].find(function (w) { return w && !w.isDestroyed(); });
+    if (target) target.webContents.send('pomodoro:finished', { ended: change.ended, next: change.next, sound: this.settings.sound });
+    try {
+      if (this.settings.notify && Notification.isSupported()) new Notification({ title: title, body: body, icon: ICON, silent: true }).show();
+    } catch (e) { /* sem avisos do sistema: o app já avisa no cenário */ }
+    if (mainWin && !mainWin.isDestroyed() && !mainWin.isFocused()) {
+      mainWin.flashFrame(true);
+      mainWin.once('focus', function () { if (mainWin) mainWin.flashFrame(false); });
+    }
+  },
+
+  setSettings: function (raw) {
+    const untouched = !this.running && this.remainingMs === this.phaseMs(this.phase);
+    this.settings = cleanPomodoroSettings(raw);
+    writeConfig({ pomodoro: this.settings });
+    /* fase ainda não começada já passa a valer com o tempo novo; fase em andamento segue como está */
+    if (untouched) this.remainingMs = this.phaseMs(this.phase);
+    this.broadcast();
+  }
+};
 
 /* ------------------------------------------------------------
    IPC — só aceita mensagens das páginas do próprio app
@@ -312,6 +475,19 @@ ipcMain.on('app:show', function (event, dateStr) {
   if (goTo) mainWin.webContents.send('app:go-to-date', goTo);
 });
 
+ipcMain.handle('pomodoro:get', function (event) {
+  return fromApp(event) ? pomodoro.snapshot() : null;
+});
+
+ipcMain.on('pomodoro:cmd', function (event, cmd, payload) {
+  if (!fromApp(event) || !isUsableDir(dataDir())) return;
+  if (cmd === 'start') pomodoro.start();
+  else if (cmd === 'pause') pomodoro.pause();
+  else if (cmd === 'reset') pomodoro.reset();
+  else if (cmd === 'skip') pomodoro.skip();
+  else if (cmd === 'settings') pomodoro.setSettings(payload);
+});
+
 ipcMain.on('splash:done', function (event) {
   if (fromApp(event)) openFirstScreen();
 });
@@ -333,12 +509,17 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(function () {
     /* sem barra de menu nativa no Windows/Linux; no macOS o menu padrão é o que dá copiar/colar */
     if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
+    pomodoro.init();
     createSplash();
     /* rede de segurança: se a abertura travar por algum motivo, o app abre mesmo assim */
     setTimeout(openFirstScreen, 8000);
   });
 
   app.on('window-all-closed', function () {
+    pomodoro.setTicking(false);
     app.quit();
   });
 }
+
+/* o teste de aceite (test/e2e.js) carrega este arquivo e adianta a ampulheta por aqui */
+module.exports = { pomodoro: pomodoro };

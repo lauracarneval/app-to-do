@@ -1,7 +1,7 @@
 {
   "name": "calendario-de-pocoes",
   "productName": "Calendário de Poções",
-  "version": "1.0.0",
+  "version": "1.1.4",
   "description": "To-do com calendário e um ateliê de poções em pixel art. Offline first: os dados ficam numa pasta escolhida por você.",
   "author": "Laura Viana",
   "license": "UNLICENSED",

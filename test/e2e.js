@@ -4,7 +4,7 @@
         fase 2 roda sozinha em seguida: reabre o app e confere a persistência.
    Usa pastas temporárias: não toca nos dados reais do usuário.
    ============================================================ */
-const { app, BrowserWindow, dialog, shell, session } = require('electron');
+const { app, BrowserWindow, Notification, dialog, shell, session } = require('electron');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -31,6 +31,9 @@ dialog.showOpenDialog = async function () { return { canceled: false, filePaths:
 dialog.showErrorBox = function (t, m) { consoleErrors.push('errorBox: ' + t + ' ' + m); };
 shell.openExternal = async function (url) { opened.push(url); };
 shell.openPath = async function (p) { opened.push('path:' + p); return ''; };
+const notified = [];
+Notification.prototype.show = function () { notified.push(this.title + ' — ' + this.body); };
+let pomodoro = null; /* relógio da ampulheta, exportado pelo main.js */
 
 const results = [];
 function check(name, ok, detail) {
@@ -164,8 +167,20 @@ async function phase1() {
   await js(main, sceneClick(27, 6));
   await js(main, sceneClick(165, 50));
   await js(main, sceneClick(78, 55));
-  await sleep(500);
-  check('cenário: caveira, gato e velas reagem sem erro', consoleErrors.length === 0, consoleErrors.join(' | '));
+  await js(main, "window.scrollTo(0, 0)");
+  await js(main, "document.getElementById('sceneToast').classList.remove('show')");
+  await sleep(400);
+  await js(main, sceneClick(42, 7));
+  await sleep(450);
+  await shot(main, '3a-domino-meio');
+  await sleep(1300);
+  await shot(main, '3a-domino-fim');
+  await sleep(2500);
+  await js(main, sceneClick(54, 8));
+  await sleep(1700);
+  await shot(main, '3a-domino-esquerda');
+  await sleep(2500);
+  check('cenário: caveira, gato, velas e livros da estante reagem sem erro', consoleErrors.length === 0, consoleErrors.join(' | '));
 
   /* bilhete: música do dia abre no navegador do sistema, não numa janela do app */
   await js(main, sceneClick(105, 87));
@@ -185,10 +200,90 @@ async function phase1() {
   check('cartaz pequeno: abre "Pendências" na hora', await js(main, "document.getElementById('scrollTitle').textContent === 'Pendências' && !document.getElementById('scrollOverlay').hidden"));
   await js(main, "document.getElementById('scrollClose').click()");
   await js(main, sceneClick(73, 27));
+  await js(main, "window.scrollTo(0, 0)");
+  await sleep(850);
+  await shot(main, '3a-cartaz-caindo');
   check('cartaz grande: cai antes de abrir (pergaminho ainda fechado)', await js(main, "document.getElementById('scrollOverlay').hidden"));
   await waitFor(function () { return js(main, "!document.getElementById('scrollOverlay').hidden"); }, 'receita abrir', 4000);
   check('cartaz grande: abre a receita sem a descrição removida', await js(main, "/^Receita de /.test(document.getElementById('scrollTitle').textContent) && document.querySelectorAll('.recipe-row').length === 7 && document.getElementById('scrollBody').textContent.indexOf('Cada dia completo') === -1"));
   await js(main, "document.getElementById('scrollClose').click()");
+
+  /* ---------- ampulheta (pomodoro) ---------- */
+  const hud = "document.getElementById('focusHud')";
+  const fTime = "document.getElementById('focusTime').textContent";
+  const fBtn = "document.getElementById('focusToggle').textContent";
+  const fPhase = "document.getElementById('focusPhase').textContent";
+  const fCount = "document.getElementById('focusCount').textContent";
+  await waitFor(function () { return js(main, fTime + " === '25:00'"); }, 'estado inicial da ampulheta');
+  check('ampulheta: painel visível, parado em 25:00', await js(main, "!" + hud + ".hidden && " + fBtn + " === 'Iniciar' && " + fPhase + " === 'Foco 1 de 4' && " + fCount + " === 'nenhum foco hoje'"));
+  await js(main, "document.getElementById('focusToggle').click()");
+  await waitFor(function () { return js(main, fBtn + " === 'Pausar' && " + fTime + " !== '25:00'"); }, 'ampulheta contar', 5000);
+  check('ampulheta: Iniciar faz o tempo correr', true, await js(main, fTime));
+  check('ampulheta: tempo aparece no título da janela', /^24:\d\d · Foco/.test(main.getTitle()), main.getTitle());
+  await js(main, "document.getElementById('focusToggle').click()");
+  await waitFor(function () { return js(main, fBtn + " === 'Continuar'"); }, 'ampulheta pausar');
+  const parado = await js(main, fTime);
+  await sleep(1300);
+  check('ampulheta: Pausar congela o tempo', await js(main, fTime) === parado && await js(main, hud + ".classList.contains('is-paused')"), parado);
+  await js(main, "document.getElementById('focusReset').click()");
+  await waitFor(function () { return js(main, fTime + " === '25:00' && " + fBtn + " === 'Iniciar'"); }, 'ampulheta zerar');
+  check('ampulheta: Zerar volta a 25:00', true);
+
+  /* ajustes pelo objeto do cenário */
+  await js(main, sceneClick(117, 18));
+  check('ampulheta: clicar nela no cenário abre os ajustes', await js(main, "document.getElementById('scrollTitle').textContent === 'Ampulheta' && !document.getElementById('scrollOverlay').hidden && document.querySelector('.focus-form [data-key=focus]').value === '25'"));
+  const readPomoCfg = function () { return JSON.parse(fs.readFileSync(path.join(process.env.POCOES_USER_DATA, 'config.json'), 'utf8')).pomodoro || {}; };
+  await js(main, "(function(){var f=document.querySelector('.focus-form');f.querySelector('[data-key=short]').value='999';f.requestSubmit();})()");
+  await sleep(300);
+  check('ajustes: formulário barra valor fora do limite', readPomoCfg().short === undefined && await js(main, "!document.querySelector('.focus-form').checkValidity()"));
+  await js(main, "(function(){var f=document.querySelector('.focus-form');f.querySelector('[data-key=focus]').value='30';f.querySelector('[data-key=short]').value='10';f.requestSubmit();})()");
+  await waitFor(function () { return js(main, fTime + " === '30:00'"); }, 'novo tempo de foco');
+  check('ajustes: guardados no perfil do app e aplicados na hora', readPomoCfg().focus === 30 && readPomoCfg().short === 10, JSON.stringify(readPomoCfg()));
+  await js(main, "window.desktop.pomodoroCmd('settings', { focus: 30, short: 999, long: 'x', perLong: 4, sound: true })");
+  await waitFor(function () { return readPomoCfg().short === 60; }, 'limite aplicado pelo processo principal', 4000);
+  check('ajustes: processo principal corrige valores inválidos', readPomoCfg().long === 15, JSON.stringify(readPomoCfg()));
+  check('ajustes: só tempos e som, sem descrição nem "focos até a pausa longa"', await js(main, "document.querySelectorAll('.focus-form input').length === 5 && document.querySelector('.focus-form [data-key=notify]').checked && !document.querySelector('.focus-form [data-key=perLong]') && document.querySelector('#scrollBody').firstElementChild.classList.contains('focus-stats')"));
+  await shot(main, '3b-ampulheta-ajustes');
+  await js(main, "(function(){var f=document.querySelector('.focus-form');f.querySelector('[data-key=short]').value='5';f.querySelector('[data-key=sound]').checked=false;f.requestSubmit();})()");
+  await sleep(200);
+  await js(main, "document.getElementById('scrollClose').click()");
+
+  /* pular não conta foco */
+  await js(main, "document.getElementById('focusSkip').click()");
+  await waitFor(function () { return js(main, fPhase + " === 'Pausa curta'"); }, 'pular para a pausa');
+  check('pular: vai para a pausa sem contar foco e sem começar sozinha', await js(main, fTime + " === '05:00' && " + fBtn + " === 'Iniciar' && " + fCount + " === 'nenhum foco hoje'"));
+  await js(main, "document.getElementById('focusSkip').click()");
+  await waitFor(function () { return js(main, fPhase + " === 'Foco 1 de 4'"); }, 'pular de volta ao foco');
+
+  /* foco que vai até o fim (o teste adianta o relógio do processo principal) */
+  await js(main, "document.getElementById('focusToggle').click()");
+  await waitFor(function () { return pomodoro.running; }, 'foco rodando');
+  await sleep(600);
+  await shot(main, '3c-ampulheta-foco');
+  pomodoro.endsAt = Date.now() - 1;
+  await waitFor(function () { return js(main, fPhase + " === 'Pausa curta' && " + fBtn + " === 'Pausar'"); }, 'fim do foco', 5000);
+  check('fim do foco: a pausa começa sozinha', true);
+  await waitFor(function () { return readData(DIR_A).pomodoros && readData(DIR_A).pomodoros[today] === 1; }, 'foco gravado no arquivo', 4000);
+  check('fim do foco: gravado no arquivo de dados, por dia', true);
+  check('fim do foco: contador e aviso no cenário', await js(main, fCount + " === '1 foco hoje' && document.getElementById('sceneToast').classList.contains('show') && /Foco conclu/.test(document.getElementById('sceneToast').textContent)"));
+  check('fim do foco: aviso do sistema', notified.length === 1 && /Foco conclu/.test(notified[0]), notified.join(' | '));
+  check('fim do foco: tarefas intactas', readData(DIR_A).tasks[today].length === 2);
+  pomodoro.endsAt = Date.now() - 1;
+  await waitFor(function () { return js(main, fPhase + " === 'Foco 2 de 4' && " + fBtn + " === 'Iniciar'"); }, 'fim da pausa', 5000);
+  check('fim da pausa: próximo foco espera o usuário', notified.length === 2 && /pausa acabou/.test(notified[1]) && !pomodoro.running, notified[1]);
+
+  /* notificação desligada nos ajustes: o foco termina sem aviso do sistema */
+  await js(main, "document.getElementById('focusSettings').click()");
+  await js(main, "(function(){var f=document.querySelector('.focus-form');f.querySelector('[data-key=notify]').checked=false;f.requestSubmit();})()");
+  await waitFor(function () { return readPomoCfg().notify === false; }, 'notificação desligada no perfil', 4000);
+  await js(main, "document.getElementById('scrollClose').click()");
+  await js(main, "document.getElementById('focusToggle').click()");
+  await waitFor(function () { return pomodoro.running; }, 'segundo foco rodando');
+  pomodoro.endsAt = Date.now() - 1;
+  await waitFor(function () { return js(main, fPhase + " === 'Pausa curta' && " + fCount + " === '2 focos hoje'"); }, 'fim do segundo foco', 5000);
+  check('notificação desligada: foco conta, mas sem aviso do sistema', notified.length === 2 && readPomoCfg().sound === false && readPomoCfg().focus === 30, notified.length);
+  await js(main, "document.getElementById('focusSkip').click()");
+  await waitFor(function () { return js(main, fPhase + " === 'Foco 3 de 4' && " + fBtn + " === 'Iniciar'"); }, 'voltar ao foco');
 
   /* ---------- widget ---------- */
   await js(main, "document.getElementById('widgetBtn').click()");
@@ -208,6 +303,14 @@ async function phase1() {
   await js(main, "document.querySelectorAll('#taskList .task-checkbox')[0].click()");
   await waitFor(function () { return js(widget, "document.querySelectorAll('#taskList .task-item.done').length === 2"); }, 'widget refletir o app', 4000);
   check('app -> widget: marcar no app atualiza o widget', true);
+  /* ampulheta no widget: mesmo relógio do app */
+  check('widget: mostra a ampulheta com o mesmo estado', await js(widget, "!document.getElementById('focusHud').hidden && document.getElementById('focusPhase').textContent === 'Foco 3 de 4' && document.getElementById('focusCount').textContent === '2 focos hoje'"));
+  await js(widget, "document.getElementById('focusToggle').click()");
+  await waitFor(function () { return js(main, "document.getElementById('focusToggle').textContent === 'Pausar'"); }, 'app refletir a ampulheta do widget', 4000);
+  check('widget -> app: iniciar no widget corre nos dois', await js(widget, "document.getElementById('focusToggle').textContent === 'Pausar'"));
+  await js(main, "document.getElementById('focusReset').click()");
+  await waitFor(function () { return js(widget, "document.getElementById('focusToggle').textContent === 'Iniciar' && document.getElementById('focusTime').textContent === '30:00'"); }, 'widget refletir o zerar do app', 4000);
+  check('app -> widget: zerar no app para os dois', true);
   await sleep(400);
   await shot(widget, '4-widget');
 
@@ -240,6 +343,8 @@ async function phase2() {
   check('reabrir: pula o onboarding', !findWin('onboarding.html'));
   check('reabrir: as 3 tarefas continuam lá', await js(main, "document.querySelectorAll('#taskList .task-item').length === 3"));
   check('reabrir: título editado persistiu', await js(main, "document.querySelectorAll('#taskList .task-text')[1].textContent === 'Moer cristais de lua'"));
+  await waitFor(function () { return js(main, "!document.getElementById('focusHud').hidden && document.getElementById('focusTime').textContent === '30:00'"); }, 'ampulheta ao reabrir');
+  check('reabrir: foco do dia e ajustes da ampulheta persistiram', await js(main, "document.getElementById('focusCount').textContent === '2 focos hoje'"));
   check('reabrir: poção e calendário refletem os dados', await js(main, "document.querySelector('.day-cell.today').classList.contains('has-pending') && document.querySelectorAll('#taskList .task-item.done').length === 2"));
   check('sem erros no console', consoleErrors.length === 0, consoleErrors.join(' | '));
 }
@@ -251,7 +356,7 @@ app.whenReady().then(function () {
   });
 });
 
-require('../main.js');
+pomodoro = require('../main.js').pomodoro;
 
 app.whenReady().then(async function () {
   let failed = false;

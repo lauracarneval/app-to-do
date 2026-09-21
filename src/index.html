@@ -42,6 +42,24 @@
         <div class="day-segments" id="daySegments"></div>
         <div class="potion-hint" id="potionHint"></div>
       </div>
+
+      <!-- ampulheta (pomodoro): só aparece no app desktop, inclusive no widget -->
+      <div class="focus-hud" id="focusHud" hidden>
+        <div class="focus-head">
+          <span class="focus-phase" id="focusPhase"></span>
+          <span class="focus-count" id="focusCount"></span>
+        </div>
+        <div class="focus-row">
+          <div class="focus-time" id="focusTime" role="timer">25:00</div>
+          <div class="focus-actions">
+            <button type="button" class="px-btn" id="focusToggle">Iniciar</button>
+            <button type="button" class="px-btn ghost" id="focusSkip" title="Ir para a próxima fase (não conta como foco)">Pular</button>
+            <button type="button" class="px-btn ghost" id="focusReset" title="Voltar ao começo desta fase">Zerar</button>
+            <button type="button" class="px-btn ghost" id="focusSettings">Ajustes</button>
+          </div>
+        </div>
+        <div class="focus-bar" aria-hidden="true"><div class="focus-fill" id="focusFill"></div></div>
+      </div>
     </div>
 
     <!-- ================= CALENDÁRIO ================= -->
@@ -83,7 +101,7 @@
   </div>
 </div>
 
-<!-- ================= PERGAMINHO (cartazes, livro e bilhete) ================= -->
+<!-- ================= PERGAMINHO (cartazes, livro, bilhete e ampulheta) ================= -->
 <div class="scroll-overlay" id="scrollOverlay" hidden>
   <div class="scroll" role="dialog" aria-modal="true" aria-labelledby="scrollTitle">
     <button type="button" class="scroll-close" id="scrollClose" aria-label="Fechar">x</button>

@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('desktop', {
   setFolder: function (dir) { return ipcRenderer.invoke('folder:set', dir); },
   openFolder: function () { return ipcRenderer.invoke('folder:open'); },
 
+  /* ampulheta (pomodoro): o relógio fica no processo principal */
+  pomodoroGet: function () { return ipcRenderer.invoke('pomodoro:get'); },
+  pomodoroCmd: function (cmd, payload) { ipcRenderer.send('pomodoro:cmd', cmd, payload); },
+  onPomodoroState: function (callback) { ipcRenderer.on('pomodoro:state', function (e, state) { callback(state); }); },
+  onPomodoroFinished: function (callback) { ipcRenderer.on('pomodoro:finished', function (e, info) { callback(info); }); },
+
   /* janelas */
   openWidget: function () { ipcRenderer.send('widget:open'); },
   closeWidget: function () { ipcRenderer.send('widget:close'); },
